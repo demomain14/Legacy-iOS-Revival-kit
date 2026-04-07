@@ -60,6 +60,96 @@ def get_device_info(device_id: str) -> dict[str, str]:
     return info
 
 
+def get_device_type_name(product_type: str) -> str:
+    """Map ProductType code to human-readable device name."""
+    device_map = {
+        # iPhone models
+        "iPhone2,1": "iPhone 3GS",
+        "iPhone3,1": "iPhone 4",
+        "iPhone3,2": "iPhone 4 (CDMA)",
+        "iPhone3,3": "iPhone 4",
+        "iPhone4,1": "iPhone 4S",
+        "iPhone5,1": "iPhone 5",
+        "iPhone5,2": "iPhone 5 (CDMA)",
+        "iPhone5,3": "iPhone 5C",
+        "iPhone5,4": "iPhone 5C (CDMA)",
+        "iPhone6,1": "iPhone 5S",
+        "iPhone6,2": "iPhone 5S (CDMA)",
+        "iPhone7,1": "iPhone 6 Plus",
+        "iPhone7,2": "iPhone 6",
+        "iPhone8,1": "iPhone 6S",
+        "iPhone8,2": "iPhone 6S Plus",
+        "iPhone8,4": "iPhone SE",
+        "iPhone9,1": "iPhone 7",
+        "iPhone9,3": "iPhone 7",
+        "iPhone9,2": "iPhone 7 Plus",
+        "iPhone9,4": "iPhone 7 Plus",
+        # iPad models
+        "iPad1,1": "iPad",
+        "iPad2,1": "iPad 2",
+        "iPad2,2": "iPad 2 (GSM)",
+        "iPad2,3": "iPad 2 (CDMA)",
+        "iPad2,4": "iPad 2",
+        "iPad3,1": "iPad (3rd Gen)",
+        "iPad3,2": "iPad (3rd Gen, CDMA)",
+        "iPad3,3": "iPad (3rd Gen)",
+        "iPad3,4": "iPad (4th Gen)",
+        "iPad3,5": "iPad (4th Gen, CDMA)",
+        "iPad3,6": "iPad (4th Gen)",
+        "iPad4,1": "iPad Air",
+        "iPad4,2": "iPad Air (CDMA)",
+        "iPad4,3": "iPad Air",
+        "iPad5,1": "iPad Air 2",
+        "iPad5,2": "iPad Air 2",
+        "iPad6,7": "iPad Pro 12.9-inch",
+        "iPad6,8": "iPad Pro 12.9-inch",
+        "iPad6,3": "iPad Pro 9.7-inch",
+        "iPad6,4": "iPad Pro 9.7-inch",
+        # iPad Mini models
+        "iPad2,5": "iPad Mini",
+        "iPad2,6": "iPad Mini (GSM)",
+        "iPad2,7": "iPad Mini (CDMA)",
+        "iPad4,4": "iPad Mini 2",
+        "iPad4,5": "iPad Mini 2 (CDMA)",
+        "iPad4,6": "iPad Mini 2",
+        "iPad4,7": "iPad Mini 3",
+        "iPad4,8": "iPad Mini 3 (CDMA)",
+        "iPad4,9": "iPad Mini 3",
+        "iPad5,3": "iPad Mini 4",
+        "iPad5,4": "iPad Mini 4",
+        # iPod models
+        "iPod1,1": "iPod Touch",
+        "iPod2,1": "iPod Touch (2nd Gen)",
+        "iPod2,2": "iPod Touch (2nd Gen)",
+        "iPod3,1": "iPod Touch (3rd Gen)",
+        "iPod4,1": "iPod Touch (4th Gen)",
+        "iPod5,1": "iPod Touch (5th Gen)",
+        "iPod7,1": "iPod Touch (6th Gen)",
+    }
+    return device_map.get(product_type, product_type)
+
+
+def display_device_info(device_id: str | None = None) -> None:
+    """Display connected device information at the top."""
+    if device_id is None:
+        device_id = detect_connected_device()
+    
+    if not device_id:
+        raise RuntimeError("No device found. Connect your iOS device and try again.")
+    
+    info = get_device_info(device_id)
+    product_type = info.get("ProductType", "Unknown")
+    device_name = get_device_type_name(product_type)
+    device_display_name = info.get("DeviceName", "Unknown Device")
+    ios_version = info.get("ProductVersion", "Unknown")
+    
+    print("=" * 60)
+    print(f"Device Type: {device_name}")
+    print(f"Device Name: {device_display_name}")
+    print(f"iOS Version: {ios_version}")
+    print("=" * 60)
+
+
 def backup_imessage_settings(ssh_target: str | None = None) -> None:
     print("Backing up iMessage settings...")
     if ssh_target is None:

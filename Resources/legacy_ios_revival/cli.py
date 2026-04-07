@@ -8,6 +8,7 @@ from legacy_ios_revival.imessage import (
     backup_imessage_settings,
     check_dependencies,
     detect_connected_device,
+    display_device_info,
     get_device_info,
 )
 
@@ -37,23 +38,31 @@ def main() -> int:
 
     if args.command == "check":
         check_dependencies()
-        device_id = detect_connected_device()
-        if not device_id:
-            print("No device found. Connect your iPhone and try again.")
+        try:
+            display_device_info()
+        except RuntimeError as e:
+            print(f"Error: {e}")
             return 1
-        info = get_device_info(device_id)
-        print("Connected device:")
-        for key in ["UniqueDeviceID", "ProductType", "ProductVersion", "DeviceName"]:
-            value = info.get(key, "unknown")
-            print(f"  {key}: {value}")
         return 0
 
     if args.command == "backup":
-        backup_imessage_settings(args.ssh_target)
+        try:
+            display_device_info()
+            print()  # Add blank line for readability
+            backup_imessage_settings(args.ssh_target)
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            return 1
         return 0
 
     if args.command == "repair":
-        apply_imessage_patch(args.ssh_target, args.patch_package)
+        try:
+            display_device_info()
+            print()  # Add blank line for readability
+            apply_imessage_patch(args.ssh_target, args.patch_package)
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            return 1
         return 0
 
     parser.print_help()
