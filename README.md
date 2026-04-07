@@ -6,6 +6,8 @@ MX Linux - MX (XFCE) is a perfect distro for this, as it can be booted as a live
 AntiX - if you have an AntiX live usb you could use this as well.
 
 Debian stable (Trixie) - i dont beleve debian has a live usb service but if it does go nuts ig.
+
+Gentoo Linux 
 # V FUTURE SUPPORTED PLATFORMS V
 Mac OS
 
