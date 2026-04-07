@@ -18,3 +18,34 @@ Forces older apps to connect with newer API's and apps
 Utalizes Jailbreaking services to jailbreak your device optionaly 
 
 ## I AM ***NOT*** RESPONSIBLE FOR WHATEVER HAPPENS TO YOUR DEVICE
+
+---
+
+## Linux iMessage Repair Helper
+This repository now includes a Linux CLI helper for legacy iMessage support on jailbroken iOS 5.1.1 devices.
+
+### Requirements
+- Linux (Ubuntu, MX Linux, Debian, Gentoo, etc.)
+- Python 3.11+
+- `libimobiledevice` tools installed (`idevice_id`, `ideviceinfo`)
+- SSH access to the jailbroken device (for repair operations)
+
+### Install
+```bash
+python3 -m pip install .
+```
+
+### Usage
+```bash
+fix-imessage check
+fix-imessage backup --ssh-target root@192.168.1.10
+fix-imessage repair --ssh-target root@192.168.1.10 [--patch-package ./imessage-fix.deb]
+```
+
+### What it does
+- checks device connectivity and iOS version
+- backs up legacy iMessage preference files
+- resets cached iMessage settings on a jailbroken device
+- optionally installs a local patch package if you have one
+
+> Note: iOS 5.1.1 is a legacy device. This helper is intended to support repair workflows on jailbroken hardware; a complete iMessage restore may also require community patch packages or compatibility tweaks.

@@ -1,0 +1,10 @@
+[project]
+name = "legacy-ios-revival-kit"
+version = "0.1.0"
+description = "Linux helper for legacy iOS device recovery and iMessage repair"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+[project.scripts]
+fix-imessage = "legacy_ios_revival.cli:main"
