@@ -9,7 +9,7 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-export PYTHONPATH="$SCRIPT_DIR/Resources:$PYTHONPATH"
+export PYTHONPATH="$SCRIPT_DIR/Resources:${PYTHONPATH:-}"
 
 # Function to detect if device is in recovery mode
 is_in_recovery() {
