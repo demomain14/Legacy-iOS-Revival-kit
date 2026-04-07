@@ -1,5 +1,5 @@
 # Legacy-iOS-Revival-kit made by PanicDEV for a school project
-An application that revives old services on iOS 3.1.3 to iOS 9.3.6 (can also optionally just be used as a jailbreak service)
+An application that revives legacy services on iOS 5.1.1 to iOS 9.3.6 (can also optionally just be used as a jailbreak service)
 # V SUPPORTED PLATFORMS V
 MX Linux - MX (XFCE) is a perfect distro for this, as it can be booted as a live USB with internet.
 
@@ -7,7 +7,7 @@ AntiX - if you have an AntiX live usb you could use this as well.
 
 Debian stable (Trixie) - i dont beleve debian has a live usb service but if it does go nuts ig.
 
-Gentoo Linux 
+Gentoo Linux - i recomend using the gui 
 # V FUTURE SUPPORTED PLATFORMS V
 Mac OS
 
