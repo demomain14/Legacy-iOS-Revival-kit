@@ -9,9 +9,4 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -f "fix_imessage.py" ]]; then
-  echo "Error: fix_imessage.py not found in $SCRIPT_DIR"
-  exit 1
-fi
-
-python3 "${SCRIPT_DIR}/fix_imessage.py" "$@"
+python3 -c "from legacy_ios_revival.cli import main; import sys; sys.exit(main())" "$@"
