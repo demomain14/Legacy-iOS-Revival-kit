@@ -11,10 +11,11 @@ install_dependencies() {
     echo ""
     echo "This script will install:"
     echo "  • Python 3 pip (Python package manager)"
-    echo "  • Python dependencies from pyproject.toml"
+    echo "  • Python dependencies from pyproject.toml (installed to user directory if needed)"
     echo "  • libimobiledevice tools (idevice_id, ideviceinfo, ideviceenterrecovery, idevicerestore)"
     echo "  • libimobiledevice development headers"
     echo "  • libusbmuxd and libusbmuxd-dev (USB multiplexing)"
+    echo "  • usbmuxd daemon (required for iOS device communication)"
     echo "  • openssh-client (ssh, scp for remote device access)"
     echo ""
 
@@ -37,26 +38,66 @@ install_dependencies() {
     fi
 
     echo "Installing Python dependencies..."
-    python3 -m pip install .
+    # Try installing with --user flag first (safer for externally managed environments)
+    if python3 -m pip install --user . 2>/dev/null; then
+        echo "Python dependencies installed successfully to user directory."
+    else
+        echo "Warning: Could not install to user directory. This may be due to an externally managed Python environment."
+        echo ""
+        echo "Trying alternative installation methods..."
+        echo ""
+
+        # Try with --break-system-packages (use with caution)
+        if python3 -m pip install --break-system-packages . 2>/dev/null; then
+            echo "Python dependencies installed successfully (system-wide)."
+        else
+            echo "Error: Could not install Python dependencies automatically."
+            echo ""
+            echo "Please choose one of the following options:"
+            echo ""
+            echo "Option 1 - Use a virtual environment:"
+            echo "  python3 -m venv venv"
+            echo "  source venv/bin/activate"
+            echo "  python3 -m pip install ."
+            echo ""
+            echo "Option 2 - Install manually:"
+            echo "  python3 -m pip install --user ."
+            echo ""
+            echo "Option 3 - Use system package manager (if available):"
+            echo "  Check if your distribution provides a package for this tool."
+            echo ""
+            echo "After installing manually, run this script again with option 1 to install system dependencies."
+            exit 1
+        fi
+    fi
 
     echo "Checking and installing system dependencies..."
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
         sudo apt update
-        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client
+        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd
+        # Start usbmuxd service if available
+        sudo systemctl start usbmuxd 2>/dev/null || true
+        sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients
+        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd
+        sudo systemctl start usbmuxd 2>/dev/null || true
+        sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh
+        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd
+        sudo systemctl start usbmuxd 2>/dev/null || true
+        sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh
+        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd
+        sudo systemctl start usbmuxd 2>/dev/null || true
+        sudo systemctl enable usbmuxd 2>/dev/null || true
     else
         echo "Unknown package manager. Please manually install:"
-        echo "  - libimobiledevice and libimobiledevice-dev"
-        echo "  - libusbmuxd and libusbmuxd-dev"
+        echo "  - libimobiledevice-utils and libimobiledevice-dev"
+        echo "  - libusbmuxd-dev and usbmuxd"
         echo "  - openssh-client (provides ssh)"
         exit 1
     fi
@@ -103,8 +144,8 @@ uninstall_dependencies() {
     echo "=================================================="
     echo ""
     echo "This will remove:"
-    echo "  • Python dependencies installed via pip"
-    echo "  • System packages (libimobiledevice, libusbmuxd, openssh-client)"
+    echo "  • Python dependencies installed via pip (from user directory or system-wide)"
+    echo "  • System packages (libimobiledevice, libusbmuxd, usbmuxd, openssh-client)"
     echo "  • Note: python3-pip will NOT be removed (it may be needed by other programs)"
     echo ""
 
@@ -117,26 +158,33 @@ uninstall_dependencies() {
 
     echo ""
     echo "Uninstalling Python dependencies..."
-    python3 -m pip uninstall -y legacy-ios-revival-kit || echo "Python package not found or already removed."
+    # Try uninstalling from user directory first
+    if python3 -m pip uninstall -y --user legacy-ios-revival-kit 2>/dev/null; then
+        echo "Python package removed from user directory."
+    else
+        # Try system-wide uninstall
+        python3 -m pip uninstall -y legacy-ios-revival-kit 2>/dev/null || echo "Python package not found or already removed."
+    fi
 
     echo "Uninstalling system packages..."
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
-        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client
-        sudo apt autoremove -y
+        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd 2>/dev/null || true
+        sudo apt autoremove -y 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients
+        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh
+        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh usbmuxd 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh
+        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd 2>/dev/null || true
     else
         echo "Unknown package manager. Please manually uninstall:"
         echo "  - libimobiledevice and libimobiledevice-dev"
         echo "  - libusbmuxd and libusbmuxd-dev"
+        echo "  - usbmuxd"
         echo "  - openssh-client (provides ssh)"
         echo "  - Run: pip uninstall legacy-ios-revival-kit"
         exit 1
@@ -144,6 +192,7 @@ uninstall_dependencies() {
 
     echo ""
     echo "Uninstallation complete."
+    echo "Note: Some mdadm warnings above are harmless and can be ignored."
     echo "Note: Some dependencies may still be present if they were installed by other programs."
 }
 

@@ -119,31 +119,58 @@ run_imessage_fix() {
 
 # Function to display device information
 show_device_info() {
+    # Check if tools are installed
     if ! command -v ideviceinfo >/dev/null 2>&1; then
-        echo "Warning: ideviceinfo not found. Cannot display device info."
+        echo "Warning: ideviceinfo not found."
+        echo "This tool is part of libimobiledevice-utils. Try reinstalling dependencies:"
+        echo "  Run: ./install-dependencies.sh and choose option 1"
+        echo ""
+        echo "Troubleshooting steps:"
+        echo "  1. Make sure your iOS device is connected and unlocked"
+        echo "  2. Trust this computer when prompted on your device"
+        echo "  3. Check if you have proper permissions: groups | grep plugdev"
+        echo "  4. Try: sudo usermod -a -G plugdev \$USER (then reboot)"
         return 1
     fi
-    
+
     if ! command -v idevice_id >/dev/null 2>&1; then
-        echo "Warning: idevice_id not found. No device connected."
+        echo "Warning: idevice_id not found."
+        echo "This tool is part of libimobiledevice-utils. Try reinstalling dependencies."
         return 1
     fi
-    
+
+    # Try to get device ID
     local device_id
-    device_id=$(idevice_id -l 2>/dev/null | head -1) || return 1
-    
+    device_id=$(idevice_id -l 2>/dev/null | head -1) || {
+        echo "Warning: No device detected or device not trusted."
+        echo ""
+        echo "Troubleshooting steps:"
+        echo "  1. Make sure your iOS device is connected via USB"
+        echo "  2. Unlock your device and tap 'Trust' when prompted"
+        echo "  3. Wait a few seconds after trusting, then try again"
+        echo "  4. Check USB connection: lsusb | grep Apple"
+        echo "  5. Try a different USB port or cable"
+        return 1
+    }
+
     if [[ -z "$device_id" ]]; then
+        echo "Warning: No device detected. Please connect your iOS device."
         return 1
     fi
-    
+
+    # Try to get device info
     local device_info
-    device_info=$(ideviceinfo -u "$device_id" 2>/dev/null) || return 1
-    
+    device_info=$(ideviceinfo -u "$device_id" 2>/dev/null) || {
+        echo "Warning: Could not get device information."
+        echo "The device may not be properly trusted or there may be a permissions issue."
+        return 1
+    }
+
     local product_type device_name product_version
     product_type=$(echo "$device_info" | grep "^ProductType:" | cut -d' ' -f2 || echo "Unknown")
     device_name=$(echo "$device_info" | grep "^DeviceName:" | cut -d' ' -f2- || echo "Unknown Device")
     product_version=$(echo "$device_info" | grep "^ProductVersion:" | cut -d' ' -f2 || echo "Unknown")
-    
+
     echo "============================================================"
     echo "Device Type: $product_type"
     echo "Device Name: $device_name"
