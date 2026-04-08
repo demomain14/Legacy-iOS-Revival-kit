@@ -84,7 +84,8 @@ install_dependencies() {
         echo "Installing additional iOS tools (some may not be available)..."
         sudo apt install -y libplist-dev libimobiledevice-glue-dev 2>/dev/null || echo "Some additional packages not available - this is usually OK"
         sudo apt install -y libirecovery-dev 2>/dev/null || echo "libirecovery-dev not available - trying alternatives..."
-        sudo apt install -y libirecovery3 libirecovery4 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
+        sudo apt install -y libirecovery3 libirecovery4 2>/dev/null || echo "libirecovery packages not found - recovery mode detection may be limited"
+        sudo apt install -y irecovery 2>/dev/null || echo "irecovery not available - some recovery features may not work"
         # Try to install idevicerestore if available as separate package
         sudo apt install -y idevicerestore 2>/dev/null || echo "idevicerestore included in libimobiledevice-utils"
         # Start usbmuxd service if available

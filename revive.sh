@@ -13,10 +13,32 @@ export PYTHONPATH="$SCRIPT_DIR/Resources:${PYTHONPATH:-}"
 
 # Function to detect if device is in recovery mode
 is_in_recovery() {
-    if ! command -v ideviceinfo >/dev/null 2>&1; then
-        return 1
+    # Method 1: Check with irecovery (if available)
+    if command -v irecovery >/dev/null 2>&1; then
+        if irecovery -q 2>/dev/null | grep -q "MODE.*Recovery\|MODE.*DFU"; then
+            return 0
+        fi
     fi
-    ideviceinfo 2>/dev/null | grep -q "RecoveryMode" || return 1
+
+    # Method 2: Check with ideviceinfo (for normal mode detection)
+    if command -v ideviceinfo >/dev/null 2>&1; then
+        if ideviceinfo 2>/dev/null | grep -q "RecoveryMode"; then
+            return 0
+        fi
+    fi
+
+    # Method 3: Check USB devices for Apple recovery/DFU mode
+    if command -v lsusb >/dev/null 2>&1; then
+        # Look for Apple devices with specific product IDs that indicate recovery/DFU mode
+        if lsusb 2>/dev/null | grep -q "05ac:"; then
+            # Check for common recovery/DFU product IDs
+            if lsusb 2>/dev/null | grep -E "05ac:128[01]|05ac:122[27]|05ac:1338" >/dev/null; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1
 }
 
 # Function to clear NVRAM
@@ -75,16 +97,40 @@ enter_recovery() {
 # Function to exit recovery mode
 exit_recovery() {
     echo "Exiting recovery mode..."
-    if ! command -v idevicerestore >/dev/null 2>&1; then
-        echo "Error: idevicerestore not found."
-        echo "This tool is part of libimobiledevice. Try installing it:"
-        echo "  - Ubuntu/Debian: sudo apt install libimobiledevice-dev libusbmuxd-dev"
-        echo "  - Fedora/RHEL: sudo dnf install libimobiledevice-devel libusbmuxd-devel"
-        echo "  - Arch: sudo pacman -S libimobiledevice libusbmuxd"
-        return 1
+    echo "Note: This will attempt to exit recovery mode and reboot your device."
+    echo ""
+
+    # Method 1: Try with idevicerestore
+    if command -v idevicerestore >/dev/null 2>&1; then
+        echo "Attempting to exit recovery mode with idevicerestore..."
+        if idevicerestore --exit-recovery 2>/dev/null; then
+            echo "Successfully sent exit recovery command."
+            echo "Your device should reboot normally."
+            return 0
+        fi
     fi
-    idevicerestore --exit-recovery
-    echo "Device exited recovery mode."
+
+    # Method 2: Try with irecovery
+    if command -v irecovery >/dev/null 2>&1; then
+        echo "Attempting to exit recovery mode with irecovery..."
+        if irecovery -n 2>/dev/null; then
+            echo "Successfully sent exit recovery command."
+            echo "Your device should reboot normally."
+            return 0
+        fi
+    fi
+
+    # Method 3: Manual instructions
+    echo "Could not automatically exit recovery mode."
+    echo ""
+    echo "Manual steps to exit recovery mode:"
+    echo "1. Disconnect your device from the computer"
+    echo "2. Hold the Power button until the device restarts"
+    echo "3. For iPod Touch: Hold Power + Home buttons until Apple logo appears"
+    echo "4. For iPhone: Hold Power + Volume Down until Apple logo appears"
+    echo ""
+    echo "If that doesn't work, you may need to use iTunes/Finder to restore the device."
+    return 1
 }
 
 # Function to run iMessage fix
@@ -207,9 +253,9 @@ run_imessage_fix() {
 # Function to display device information
 show_device_info() {
     # Check if tools are installed
-    if ! command -v ideviceinfo >/dev/null 2>&1; then
-        echo "Warning: ideviceinfo not found."
-        echo "This tool is part of libimobiledevice-utils. Try reinstalling dependencies:"
+    if ! command -v ideviceinfo >/dev/null 2>&1 && ! command -v irecovery >/dev/null 2>&1; then
+        echo "Warning: Neither ideviceinfo nor irecovery found."
+        echo "This tool requires libimobiledevice-utils. Try reinstalling dependencies:"
         echo "  Run: ./install-dependencies.sh and choose option 1"
         echo ""
         echo "Troubleshooting steps:"
@@ -218,6 +264,19 @@ show_device_info() {
         echo "  3. Check if you have proper permissions: groups | grep plugdev"
         echo "  4. Try: sudo usermod -a -G plugdev \$USER (then reboot)"
         return 1
+    fi
+
+    # Check if device is in recovery mode first
+    if is_in_recovery; then
+        echo "============================================================"
+        echo "Device Status: IN RECOVERY MODE"
+        echo "Device Type: iOS Device (Recovery Mode)"
+        echo "Device Name: Unknown (Recovery Mode)"
+        echo "iOS Version: Unknown (Recovery Mode)"
+        echo "============================================================"
+        echo ""
+        echo "Note: Device is in recovery mode. Use option 3 to exit recovery mode."
+        return 0
     fi
 
     if ! command -v idevice_id >/dev/null 2>&1; then
@@ -237,9 +296,7 @@ show_device_info() {
         echo "  3. Wait a few seconds after trusting, then try again"
         echo "  4. Check USB connection: lsusb | grep Apple"
         echo "  5. Try a different USB port or cable"
-        return 1
-    }
-
+        echo "  6. If device is in recovery mode, it will show 'IN RECOVERY MODE' above"
     if [[ -z "$device_id" ]]; then
         echo "Warning: No device detected. Please connect your iOS device."
         return 1
