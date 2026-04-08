@@ -129,12 +129,22 @@ def get_device_type_name(product_type: str) -> str:
     return device_map.get(product_type, product_type)
 
 
-def display_device_info(device_id: str | None = None) -> None:
-    """Display connected device information at the top."""
+def display_device_info(device_id: str | None = None, skip_if_unavailable: bool = False) -> None:
+    """Display connected device information at the top.
+    
+    Args:
+        device_id: Optional device ID to use (auto-detect if not provided)
+        skip_if_unavailable: If True, silently skip display if device not accessible
+                           (useful for SSH operations when device may be in DFU mode)
+    """
     if device_id is None:
         device_id = detect_connected_device()
     
     if not device_id:
+        if skip_if_unavailable:
+            print("Note: Device not accessible via USB (may be in DFU/Recovery mode)")
+            print("      Using SSH to connect directly to the device.")
+            return
         raise RuntimeError("No device found. Connect your iOS device and try again.")
     
     info = get_device_info(device_id)

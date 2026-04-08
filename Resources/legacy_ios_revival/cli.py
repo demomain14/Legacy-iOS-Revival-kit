@@ -47,7 +47,7 @@ def main() -> int:
 
     if args.command == "backup":
         try:
-            display_device_info()
+            display_device_info(skip_if_unavailable=True)
             print()  # Add blank line for readability
             backup_imessage_settings(args.ssh_target)
         except RuntimeError as e:
@@ -57,7 +57,7 @@ def main() -> int:
 
     if args.command == "repair":
         try:
-            display_device_info()
+            display_device_info(skip_if_unavailable=True)
             print()  # Add blank line for readability
             apply_imessage_patch(args.ssh_target, args.patch_package)
         except RuntimeError as e:
