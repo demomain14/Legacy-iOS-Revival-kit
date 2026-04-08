@@ -16,7 +16,7 @@ install_dependencies() {
     echo "  • libimobiledevice development headers and core dependencies"
     echo "  • libusbmuxd and libusbmuxd-dev (USB multiplexing)"
     echo "  • usbmuxd daemon (required for iOS device communication)"
-    echo "  • Additional iOS tools (libirecovery, libplist, etc. - if available)"
+    echo "  • Additional iOS tools (libirecovery for DFU mode operations, libplist, etc. - if available)"
     echo "  • openssh-client (ssh, scp for remote device access)"
     echo ""
     echo "Note: Some optional packages may not be available on all systems - this is usually OK"
@@ -85,7 +85,7 @@ install_dependencies() {
         sudo apt install -y libplist-dev libimobiledevice-glue-dev 2>/dev/null || echo "Some additional packages not available - this is usually OK"
         sudo apt install -y libirecovery-dev 2>/dev/null || echo "libirecovery-dev not available - trying alternatives..."
         sudo apt install -y libirecovery3 libirecovery4 2>/dev/null || echo "libirecovery packages not found - recovery mode detection may be limited"
-        sudo apt install -y irecovery 2>/dev/null || echo "irecovery not available - some recovery features may not work"
+        sudo apt install -y irecovery 2>/dev/null || echo "irecovery not available - DFU mode operations (like clearing NVRAM) may not work"
         # Try to install idevicerestore if available as separate package
         sudo apt install -y idevicerestore 2>/dev/null || echo "idevicerestore included in libimobiledevice-utils"
         # Start usbmuxd service if available
@@ -96,7 +96,7 @@ install_dependencies() {
         sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd
         echo "Installing additional iOS tools (some may not be available)..."
         sudo dnf install -y libplist-devel libimobiledevice-glue-devel 2>/dev/null || echo "Some additional packages not available - this is usually OK"
-        sudo dnf install -y libirecovery-devel 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
+        sudo dnf install -y libirecovery-devel 2>/dev/null || echo "libirecovery packages not found - DFU mode operations may be limited"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
@@ -104,7 +104,7 @@ install_dependencies() {
         sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd
         echo "Installing additional iOS tools (some may not be available)..."
         sudo pacman -S --noconfirm libplist libimobiledevice-glue 2>/dev/null || echo "Some additional packages not available - this is usually OK"
-        sudo pacman -S --noconfirm libirecovery 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
+        sudo pacman -S --noconfirm libirecovery 2>/dev/null || echo "libirecovery packages not found - DFU mode operations may be limited"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
@@ -112,7 +112,7 @@ install_dependencies() {
         sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd
         echo "Installing additional iOS tools (some may not be available)..."
         sudo emerge --ask=n dev-libs/libplist app-pda/libimobiledevice-glue 2>/dev/null || echo "Some additional packages not available - this is usually OK"
-        sudo emerge --ask=n app-pda/libirecovery 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
+        sudo emerge --ask=n app-pda/libirecovery 2>/dev/null || echo "libirecovery packages not found - DFU mode operations may be limited"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     else

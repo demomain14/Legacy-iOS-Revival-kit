@@ -43,29 +43,64 @@ is_in_recovery() {
 
 # Function to clear NVRAM
 clear_nvram() {
+    echo "Clearing NVRAM requires the device to be in DFU mode."
+    echo ""
+
+    # Check if device is already in DFU/recovery mode
+    if is_in_recovery; then
+        echo "✓ Device is already in recovery/DFU mode."
+    else
+        echo "✗ Device is not in DFU mode. You need to put your device into DFU mode first."
+        echo ""
+        echo "=== DFU MODE INSTRUCTIONS ==="
+        echo "Follow these steps carefully:"
+        echo ""
+        echo "1. Disconnect your device from the computer"
+        echo "2. Turn off your device completely"
+        echo "3. Ready your fingers on Power and Home buttons"
+        echo ""
+        echo "For iPod Touch/iPhone:"
+        echo "• Hold Power button for 3 seconds: 3... 2... 1... GO!"
+        echo "• While still holding Power, hold Home button for 8 seconds: 8... 7... 6... 5... 4... 3... 2... 1..."
+        echo "• Release Power button but keep holding Home for another 8 seconds: 8... 7... 6... 5... 4... 3... 2... 1..."
+        echo ""
+        echo "You should see a black screen - this means you're in DFU mode!"
+        echo "Now connect your device back to the computer."
+        echo ""
+        read -p "Press Enter when your device is in DFU mode and connected..."
+    fi
+
+    # Check if irecovery is available
+    if ! command -v irecovery >/dev/null 2>&1; then
+        echo "Error: irecovery not found."
+        echo "This tool is needed for DFU mode operations. Try installing it:"
+        echo "  - Ubuntu/Debian: sudo apt install irecovery"
+        echo "  - Or run: ./install-dependencies.sh"
+        return 1
+    fi
+
+    # Verify device is in DFU mode
+    if ! irecovery -q 2>/dev/null | grep -q "MODE.*DFU"; then
+        echo "Error: Device is not in DFU mode."
+        echo "Please follow the DFU mode instructions above and try again."
+        return 1
+    fi
+
     echo "Clearing NVRAM..."
-    if ! command -v ideviceenterrecovery >/dev/null 2>&1; then
-        echo "Error: ideviceenterrecovery not found."
-        echo "This tool is part of libimobiledevice. Try installing it:"
-        echo "  - Ubuntu/Debian: sudo apt install libimobiledevice-dev"
-        echo "  - Fedora/RHEL: sudo dnf install libimobiledevice-devel"
-        echo "  - Arch: sudo pacman -S libimobiledevice"
+    # Send NVRAM clear command via irecovery
+    if irecovery -c "nvram clear" 2>/dev/null; then
+        echo "✓ NVRAM cleared successfully!"
+        echo "Your device will reboot automatically."
+        echo ""
+        echo "Note: After rebooting, you may need to:"
+        echo "1. Re-jailbreak your device if it was jailbroken"
+        echo "2. Restore from backup if needed"
+        echo "3. Re-trust this computer"
+    else
+        echo "✗ Failed to clear NVRAM."
+        echo "The device may not be properly in DFU mode, or there was an error."
         return 1
     fi
-
-    # Get device UDID
-    local device_udid
-    device_udid=$(idevice_id -l 2>/dev/null | head -1)
-    if [[ -z "$device_udid" ]]; then
-        echo "Error: No device connected or device not detected."
-        echo "Make sure your iOS device is connected and trusted."
-        return 1
-    fi
-
-    echo "Found device with UDID: $device_udid"
-    ideviceenterrecovery "$device_udid"
-    echo "Device entered recovery mode. NVRAM cleared."
-    echo "To exit recovery, use the 'Exit Recovery Mode' option."
 }
 
 # Function to enter recovery mode
@@ -337,7 +372,7 @@ while true; do
     echo "Legacy iOS Revival Kit Menu"
     echo "==========================="
     echo "1. Run iMessage Fix"
-    echo "2. Clear NVRAM"
+    echo "2. Clear NVRAM (requires DFU mode)"
     if is_in_recovery; then
         echo "3. Exit Recovery Mode"
     else
