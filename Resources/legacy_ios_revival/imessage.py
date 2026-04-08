@@ -164,7 +164,7 @@ def backup_imessage_settings(ssh_target: str | None = None) -> None:
     local_path = backup_dir / "com.apple.iChat.plist"
 
     print(f"  Copying {remote_path} from {ssh_target} to {local_path}...")
-    run_command(f"scp -o StrictHostKeyChecking=no {ssh_target}:{remote_path} {shlex.quote(str(local_path))}")
+    run_command(f"scp -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa,ssh-dss {ssh_target}:{remote_path} {shlex.quote(str(local_path))}")
     print(f"Backup complete: {local_path}")
     print(
         "If this file does not exist, the device may not be jailbroken or iMessage is not configured yet."
@@ -185,8 +185,8 @@ def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | Non
             raise RuntimeError(f"Patch package not found: {patch_file}")
 
         print(f"Installing patch package {patch_file.name} to device...")
-        run_command(f"scp -o StrictHostKeyChecking=no {shlex.quote(str(patch_file))} {ssh_target}:/tmp/{patch_file.name}")
-        run_command(f"ssh -o StrictHostKeyChecking=no {ssh_target} 'dpkg -i /tmp/{patch_file.name} || true'"
+        run_command(f"scp -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa,ssh-dss {shlex.quote(str(patch_file))} {ssh_target}:/tmp/{patch_file.name}")
+        run_command(f"ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa,ssh-dss {ssh_target} 'dpkg -i /tmp/{patch_file.name} || true'"
                     )
         print("Patch copy completed. Verify installation on the device.")
 
@@ -201,7 +201,7 @@ def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | Non
         "rm -rf /private/var/mobile/Library/Logs/iMessage",
     ]
     for cmd in commands:
-        run_command(f"ssh -o StrictHostKeyChecking=no {ssh_target} '{cmd}'")
+        run_command(f"ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa,ssh-dss {ssh_target} '{cmd}'")
 
     print(
         "Repair workflow completed. On the device, restart and open Settings -> Messages. "
