@@ -164,6 +164,7 @@ def backup_imessage_settings(ssh_target: str | None = None) -> None:
     local_path = backup_dir / "com.apple.iChat.plist"
 
     print(f"  Copying {remote_path} from {ssh_target} to {local_path}...")
+    print("  Note: If prompted for a password, the default jailbroken root password is 'alpine'")
     run_command(f"scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target}:{remote_path} {shlex.quote(str(local_path))}")
     print(f"Backup complete: {local_path}")
     print(
@@ -178,6 +179,9 @@ def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | Non
             "Repair requires a jailbroken device reachable over SSH. "
             "Use --ssh-target root@<device-ip>."
         )
+
+    print("Note: If prompted for a password during SSH/SCP operations, the default jailbroken root password is 'alpine'")
+    print()
 
     if patch_package is not None:
         patch_file = Path(patch_package).expanduser().resolve()
