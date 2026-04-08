@@ -165,11 +165,23 @@ def backup_imessage_settings(ssh_target: str | None = None) -> None:
 
     print(f"  Copying {remote_path} from {ssh_target} to {local_path}...")
     print(f"  Note: If prompted for a '{ssh_target} password', the default jailbroken root password is 'alpine'")
-    run_command(f"scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target}:{remote_path} {shlex.quote(str(local_path))}")
-    print(f"Backup complete: {local_path}")
-    print(
-        "If this file does not exist, the device may not be jailbroken or iMessage is not configured yet."
-    )
+    
+    try:
+        run_command(f"scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target}:{remote_path} {shlex.quote(str(local_path))}")
+        print(f"Backup complete: {local_path}")
+    except RuntimeError as e:
+        if "No such file or directory" in str(e):
+            raise RuntimeError(
+                f"iMessage settings file not found on device.\n\n"
+                f"This means iMessage has not been configured yet. Please:\n"
+                f"1. On your iOS device, go to Settings → Messages\n"
+                f"2. Enable iMessage and sign in with your Apple ID\n"
+                f"3. Wait for activation to complete\n"
+                f"4. Then run this tool again to back up the settings\n\n"
+                f"Alternatively, you can skip backup and run the repair directly:\n"
+                f"  ./revive.sh repair --ssh-target {ssh_target}"
+            ) from e
+        raise
 
 
 def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | None = None) -> None:
