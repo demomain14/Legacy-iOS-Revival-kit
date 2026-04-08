@@ -13,11 +13,13 @@ install_dependencies() {
     echo "  • Python 3 pip (Python package manager)"
     echo "  • Python dependencies from pyproject.toml (installed to user directory if needed)"
     echo "  • libimobiledevice tools (idevice_id, ideviceinfo, ideviceenterrecovery, idevicerestore)"
-    echo "  • libimobiledevice development headers and dependencies"
+    echo "  • libimobiledevice development headers and core dependencies"
     echo "  • libusbmuxd and libusbmuxd-dev (USB multiplexing)"
     echo "  • usbmuxd daemon (required for iOS device communication)"
-    echo "  • libirecovery, libplist, and libimobiledevice-glue (additional iOS tools)"
+    echo "  • Additional iOS tools (libirecovery, libplist, etc. - if available)"
     echo "  • openssh-client (ssh, scp for remote device access)"
+    echo ""
+    echo "Note: Some optional packages may not be available on all systems - this is usually OK"
     echo ""
 
     echo "Checking for pip..."
@@ -76,8 +78,13 @@ install_dependencies() {
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
         sudo apt update
-        # Install comprehensive libimobiledevice packages including idevicerestore dependencies
-        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd libirecovery-dev libplist-dev libimobiledevice-glue-dev
+        # Install core libimobiledevice packages
+        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd
+        # Try to install additional iOS recovery tools (may not be available on all systems)
+        echo "Installing additional iOS tools (some may not be available)..."
+        sudo apt install -y libplist-dev libimobiledevice-glue-dev 2>/dev/null || echo "Some additional packages not available - this is usually OK"
+        sudo apt install -y libirecovery-dev 2>/dev/null || echo "libirecovery-dev not available - trying alternatives..."
+        sudo apt install -y libirecovery3 libirecovery4 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
         # Try to install idevicerestore if available as separate package
         sudo apt install -y idevicerestore 2>/dev/null || echo "idevicerestore included in libimobiledevice-utils"
         # Start usbmuxd service if available
@@ -85,17 +92,26 @@ install_dependencies() {
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd libirecovery-devel libplist-devel libimobiledevice-glue-devel
+        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd
+        echo "Installing additional iOS tools (some may not be available)..."
+        sudo dnf install -y libplist-devel libimobiledevice-glue-devel 2>/dev/null || echo "Some additional packages not available - this is usually OK"
+        sudo dnf install -y libirecovery-devel 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd libirecovery libplist libimobiledevice-glue
+        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd
+        echo "Installing additional iOS tools (some may not be available)..."
+        sudo pacman -S --noconfirm libplist libimobiledevice-glue 2>/dev/null || echo "Some additional packages not available - this is usually OK"
+        sudo pacman -S --noconfirm libirecovery 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd app-pda/libirecovery dev-libs/libplist app-pda/libimobiledevice-glue
+        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd
+        echo "Installing additional iOS tools (some may not be available)..."
+        sudo emerge --ask=n dev-libs/libplist app-pda/libimobiledevice-glue 2>/dev/null || echo "Some additional packages not available - this is usually OK"
+        sudo emerge --ask=n app-pda/libirecovery 2>/dev/null || echo "libirecovery packages not found - idevicerestore may still work"
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     else
@@ -174,17 +190,21 @@ uninstall_dependencies() {
     echo "Uninstalling system packages..."
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
-        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd libirecovery-dev libplist-dev libimobiledevice-glue-dev idevicerestore 2>/dev/null || true
+        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd libplist-dev libimobiledevice-glue-dev 2>/dev/null || true
+        sudo apt remove -y libirecovery-dev libirecovery3 libirecovery4 idevicerestore 2>/dev/null || true
         sudo apt autoremove -y 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd libirecovery-devel libplist-devel libimobiledevice-glue-devel 2>/dev/null || true
+        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd libplist-devel libimobiledevice-glue-devel 2>/dev/null || true
+        sudo dnf remove -y libirecovery-devel 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh usbmuxd libirecovery libplist libimobiledevice-glue 2>/dev/null || true
+        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh usbmuxd libplist libimobiledevice-glue 2>/dev/null || true
+        sudo pacman -Rns --noconfirm libirecovery 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd app-pda/libirecovery dev-libs/libplist app-pda/libimobiledevice-glue 2>/dev/null || true
+        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd dev-libs/libplist app-pda/libimobiledevice-glue 2>/dev/null || true
+        sudo emerge --unmerge app-pda/libirecovery 2>/dev/null || true
     else
         echo "Unknown package manager. Please manually uninstall:"
         echo "  - libimobiledevice-utils and libimobiledevice-dev"
