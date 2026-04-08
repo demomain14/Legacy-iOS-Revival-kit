@@ -30,7 +30,18 @@ clear_nvram() {
         echo "  - Arch: sudo pacman -S libimobiledevice"
         return 1
     fi
-    ideviceenterrecovery
+
+    # Get device UDID
+    local device_udid
+    device_udid=$(idevice_id -l 2>/dev/null | head -1)
+    if [[ -z "$device_udid" ]]; then
+        echo "Error: No device connected or device not detected."
+        echo "Make sure your iOS device is connected and trusted."
+        return 1
+    fi
+
+    echo "Found device with UDID: $device_udid"
+    ideviceenterrecovery "$device_udid"
     echo "Device entered recovery mode. NVRAM cleared."
     echo "To exit recovery, use the 'Exit Recovery Mode' option."
 }
@@ -46,7 +57,18 @@ enter_recovery() {
         echo "  - Arch: sudo pacman -S libimobiledevice"
         return 1
     fi
-    ideviceenterrecovery
+
+    # Get device UDID
+    local device_udid
+    device_udid=$(idevice_id -l 2>/dev/null | head -1)
+    if [[ -z "$device_udid" ]]; then
+        echo "Error: No device connected or device not detected."
+        echo "Make sure your iOS device is connected and trusted."
+        return 1
+    fi
+
+    echo "Found device with UDID: $device_udid"
+    ideviceenterrecovery "$device_udid"
     echo "Device is now in recovery mode."
 }
 
@@ -71,37 +93,102 @@ run_imessage_fix() {
     echo "iMessage Fix Options"
     echo "===================="
     echo "1. Check device connectivity"
-    echo "2. Backup iMessage settings (requires SSH)"
-    echo "3. Repair iMessage (requires SSH)"
+    echo "2. Backup iMessage settings (requires SSH connection to device)"
+    echo "3. Repair iMessage (requires SSH connection to device)"
     echo "4. Back to main menu"
     echo ""
     read -p "Choose an option (1-4): " imessage_choice
-    
+
     case $imessage_choice in
         1)
             echo "Checking device connectivity..."
             python3 -c "from legacy_ios_revival.cli import main; import sys; sys.argv = ['fix-imessage', 'check']; sys.exit(main())"
             ;;
         2)
-            read -p "Enter SSH target (e.g., root@192.168.1.10): " ssh_target
+            echo ""
+            echo "=== SSH CONNECTION SETUP ==="
+            echo ""
+            echo "To backup iMessage settings, we need to connect to your iOS device remotely."
+            echo "This requires your device to be 'jailbroken' and have SSH access enabled."
+            echo ""
+            echo "WHAT IS SSH?"
+            echo "SSH is like a secure remote control for your device. It lets this computer"
+            echo "connect to your iPhone/iPod remotely over your WiFi network."
+            echo ""
+            echo "HOW TO FIND YOUR SSH TARGET:"
+            echo ""
+            echo "Step 1: Make sure your iOS device is jailbroken"
+            echo "       - This tool only works with jailbroken devices"
+            echo "       - If not jailbroken, you cannot use backup/repair features"
+            echo ""
+            echo "Step 2: On your iOS device, open any app that shows network info"
+            echo "       - Look for 'IP Address' or 'Wi-Fi Address'"
+            echo "       - Common apps: Settings → Wi-Fi → tap the (i) next to your network"
+            echo "       - Or use apps like 'Network Analyzer' or 'WiFi Analyzer' from Cydia"
+            echo ""
+            echo "Step 3: Find the IP address"
+            echo "       - It will look like: 192.168.1.100 or 192.168.0.50"
+            echo "       - Write this number down"
+            echo ""
+            echo "Step 4: The SSH target format is: root@[IP_ADDRESS]"
+            echo "       - Replace [IP_ADDRESS] with the number you found"
+            echo "       - Example: root@192.168.1.100"
+            echo ""
+            echo "WHAT IS 'root'?"
+            echo "       - 'root' is the administrator username for jailbroken iOS devices"
+            echo "       - It's like the 'boss' account that can access system files"
+            echo ""
+            read -p "Enter SSH target (format: root@[IP_ADDRESS], e.g., root@192.168.1.100): " ssh_target
             if [[ -z "$ssh_target" ]]; then
-                echo "Error: SSH target is required."
+                echo "Error: SSH target is required for backup."
                 return 1
             fi
+            echo "Connecting to: $ssh_target"
             echo "Backing up iMessage settings..."
             python3 -c "from legacy_ios_revival.cli import main; import sys; sys.argv = ['fix-imessage', '--ssh-target', '$ssh_target', 'backup']; sys.exit(main())"
             ;;
         3)
-            read -p "Enter SSH target (e.g., root@192.168.1.10): " ssh_target
+            echo ""
+            echo "=== SSH CONNECTION SETUP ==="
+            echo ""
+            echo "To repair iMessage, we need to connect to your iOS device remotely."
+            echo "This requires your device to be 'jailbroken' and have SSH access enabled."
+            echo ""
+            echo "WHAT IS SSH?"
+            echo "SSH is like a secure remote control for your device. It lets this computer"
+            echo "connect to your iPhone/iPod remotely over your WiFi network."
+            echo ""
+            echo "HOW TO FIND YOUR SSH TARGET:"
+            echo ""
+            echo "Step 1: Make sure your iOS device is jailbroken"
+            echo "       - This tool only works with jailbroken devices"
+            echo "       - If not jailbroken, you cannot use repair features"
+            echo ""
+            echo "Step 2: On your iOS device, find your IP address"
+            echo "       - Go to: Settings → Wi-Fi → tap the (i) next to your connected network"
+            echo "       - Look for 'IP Address' - it looks like: 192.168.1.100"
+            echo "       - Or use apps like 'Network Analyzer' from Cydia"
+            echo ""
+            echo "Step 3: The SSH target format is: root@[IP_ADDRESS]"
+            echo "       - Replace [IP_ADDRESS] with your device's IP address"
+            echo "       - Example: root@192.168.1.100"
+            echo ""
+            echo "WHAT IS 'root'?"
+            echo "       - 'root' is the administrator username for jailbroken iOS"
+            echo "       - It's the main account that can change system settings"
+            echo ""
+            read -p "Enter SSH target (format: root@[IP_ADDRESS], e.g., root@192.168.1.100): " ssh_target
             if [[ -z "$ssh_target" ]]; then
-                echo "Error: SSH target is required."
+                echo "Error: SSH target is required for repair."
                 return 1
             fi
             read -p "Enter patch package path (optional, press Enter to skip): " patch_package
             if [[ -z "$patch_package" ]]; then
+                echo "Connecting to: $ssh_target"
                 echo "Running iMessage repair..."
                 python3 -c "from legacy_ios_revival.cli import main; import sys; sys.argv = ['fix-imessage', '--ssh-target', '$ssh_target', 'repair']; sys.exit(main())"
             else
+                echo "Connecting to: $ssh_target"
                 echo "Running iMessage repair with patch..."
                 python3 -c "from legacy_ios_revival.cli import main; import sys; sys.argv = ['fix-imessage', '--ssh-target', '$ssh_target', '--patch-package', '$patch_package', 'repair']; sys.exit(main())"
             fi
@@ -113,7 +200,7 @@ run_imessage_fix() {
             echo "Invalid option. Please choose 1-4."
             ;;
     esac
-    
+
     read -p "Press Enter to continue..."
 }
 
