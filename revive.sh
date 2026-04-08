@@ -332,10 +332,8 @@ show_device_info() {
         echo "  4. Check USB connection: lsusb | grep Apple"
         echo "  5. Try a different USB port or cable"
         echo "  6. If device is in recovery mode, it will show 'IN RECOVERY MODE' above"
-    if [[ -z "$device_id" ]]; then
-        echo "Warning: No device detected. Please connect your iOS device."
         return 1
-    fi
+    }
 
     # Try to get device info
     local device_info
