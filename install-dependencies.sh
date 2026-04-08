@@ -13,9 +13,10 @@ install_dependencies() {
     echo "  • Python 3 pip (Python package manager)"
     echo "  • Python dependencies from pyproject.toml (installed to user directory if needed)"
     echo "  • libimobiledevice tools (idevice_id, ideviceinfo, ideviceenterrecovery, idevicerestore)"
-    echo "  • libimobiledevice development headers"
+    echo "  • libimobiledevice development headers and dependencies"
     echo "  • libusbmuxd and libusbmuxd-dev (USB multiplexing)"
     echo "  • usbmuxd daemon (required for iOS device communication)"
+    echo "  • libirecovery, libplist, and libimobiledevice-glue (additional iOS tools)"
     echo "  • openssh-client (ssh, scp for remote device access)"
     echo ""
 
@@ -75,29 +76,33 @@ install_dependencies() {
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
         sudo apt update
-        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd
+        # Install comprehensive libimobiledevice packages including idevicerestore dependencies
+        sudo apt install -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd libirecovery-dev libplist-dev libimobiledevice-glue-dev
+        # Try to install idevicerestore if available as separate package
+        sudo apt install -y idevicerestore 2>/dev/null || echo "idevicerestore included in libimobiledevice-utils"
         # Start usbmuxd service if available
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd
+        sudo dnf install -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd libirecovery-devel libplist-devel libimobiledevice-glue-devel
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd
+        sudo pacman -Syu --noconfirm libimobiledevice libusbmuxd openssh usbmuxd libirecovery libplist libimobiledevice-glue
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd
+        sudo emerge --ask=n libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd app-pda/libirecovery dev-libs/libplist app-pda/libimobiledevice-glue
         sudo systemctl start usbmuxd 2>/dev/null || true
         sudo systemctl enable usbmuxd 2>/dev/null || true
     else
         echo "Unknown package manager. Please manually install:"
         echo "  - libimobiledevice-utils and libimobiledevice-dev"
         echo "  - libusbmuxd-dev and usbmuxd"
+        echo "  - libirecovery-dev, libplist-dev, and libimobiledevice-glue-dev"
         echo "  - openssh-client (provides ssh)"
         exit 1
     fi
@@ -169,22 +174,22 @@ uninstall_dependencies() {
     echo "Uninstalling system packages..."
     if command -v apt >/dev/null 2>&1; then
         echo "Detected apt package manager (Debian/Ubuntu-based)."
-        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd 2>/dev/null || true
+        sudo apt remove -y libimobiledevice-utils libimobiledevice-dev libusbmuxd-dev openssh-client usbmuxd libirecovery-dev libplist-dev libimobiledevice-glue-dev idevicerestore 2>/dev/null || true
         sudo apt autoremove -y 2>/dev/null || true
     elif command -v dnf >/dev/null 2>&1; then
         echo "Detected dnf package manager (Fedora/RHEL-based)."
-        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd 2>/dev/null || true
+        sudo dnf remove -y libimobiledevice-utils libimobiledevice-devel libusbmuxd-devel openssh-clients usbmuxd libirecovery-devel libplist-devel libimobiledevice-glue-devel 2>/dev/null || true
     elif command -v pacman >/dev/null 2>&1; then
         echo "Detected pacman package manager (Arch-based)."
-        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh usbmuxd 2>/dev/null || true
+        sudo pacman -Rns --noconfirm libimobiledevice libusbmuxd openssh usbmuxd libirecovery libplist libimobiledevice-glue 2>/dev/null || true
     elif command -v emerge >/dev/null 2>&1; then
         echo "Detected emerge package manager (Gentoo)."
-        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd 2>/dev/null || true
+        sudo emerge --unmerge libimobiledevice libusbmuxd net-misc/openssh sys-apps/usbmuxd app-pda/libirecovery dev-libs/libplist app-pda/libimobiledevice-glue 2>/dev/null || true
     else
         echo "Unknown package manager. Please manually uninstall:"
-        echo "  - libimobiledevice and libimobiledevice-dev"
-        echo "  - libusbmuxd and libusbmuxd-dev"
-        echo "  - usbmuxd"
+        echo "  - libimobiledevice-utils and libimobiledevice-dev"
+        echo "  - libusbmuxd-dev and usbmuxd"
+        echo "  - libirecovery-dev, libplist-dev, and libimobiledevice-glue-dev"
         echo "  - openssh-client (provides ssh)"
         echo "  - Run: pip uninstall legacy-ios-revival-kit"
         exit 1
