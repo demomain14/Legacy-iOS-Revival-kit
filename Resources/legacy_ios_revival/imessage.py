@@ -106,9 +106,9 @@ def get_device_type_name(product_type: str) -> str:
         "iPad6,3": "iPad Pro 9.7-inch",
         "iPad6,4": "iPad Pro 9.7-inch",
         # iPad Mini models
-        "iPad2,5": "iPad Mini",
-        "iPad2,6": "iPad Mini (GSM)",
-        "iPad2,7": "iPad Mini (CDMA)",
+        "iPad2,5": "iPad Mini (1st Gen)",
+        "iPad2,6": "iPad Mini (1st Gen, GSM)",
+        "iPad2,7": "iPad Mini (1st Gen, CDMA)",
         "iPad4,4": "iPad Mini 2",
         "iPad4,5": "iPad Mini 2 (CDMA)",
         "iPad4,6": "iPad Mini 2",
