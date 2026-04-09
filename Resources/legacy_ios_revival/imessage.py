@@ -194,7 +194,7 @@ def backup_imessage_settings(ssh_target: str | None = None) -> None:
         raise
 
 
-def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | None = None) -> None:
+def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | None = None, skip_backup: bool = False) -> None:
     print("Starting legacy iMessage repair workflow...")
     if ssh_target is None:
         raise RuntimeError(
@@ -217,10 +217,13 @@ def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | Non
         print("Patch copy completed. Verify installation on the device.")
 
     print("Applying required runtime repairs...")
-    print("  1) Backing up iMessage preference file.")
-    backup_imessage_settings(ssh_target)
+    if not skip_backup:
+        print("  1) Backing up iMessage preference file.")
+        backup_imessage_settings(ssh_target)
+        print("  2) Resetting iMessage cache and preferences.")
+    else:
+        print("  1) Resetting iMessage cache and preferences (backup skipped).")
 
-    print("  2) Resetting iMessage cache and preferences.")
     commands = [
         "rm -f /private/var/mobile/Library/Preferences/com.apple.iChat.plist",
         "rm -rf /private/var/mobile/Library/Preferences/com.apple.iChat.*",

@@ -32,7 +32,12 @@ def main() -> int:
 
     subparsers.add_parser("check", help="Check platform, toolchain, and device connectivity.")
     subparsers.add_parser("backup", help="Backup iMessage settings from a connected device.")
-    subparsers.add_parser("repair", help="Run the legacy iMessage repair workflow.")
+    repair_parser = subparsers.add_parser("repair", help="Run the legacy iMessage repair workflow.")
+    repair_parser.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Skip backing up iMessage settings during repair.",
+    )
 
     args = parser.parse_args()
 
@@ -59,7 +64,7 @@ def main() -> int:
         try:
             display_device_info(skip_if_unavailable=True)
             print()  # Add blank line for readability
-            apply_imessage_patch(args.ssh_target, args.patch_package)
+            apply_imessage_patch(args.ssh_target, args.patch_package, skip_backup=args.no_backup)
         except RuntimeError as e:
             print(f"Error: {e}")
             return 1
