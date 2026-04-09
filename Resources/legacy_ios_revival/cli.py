@@ -10,6 +10,7 @@ from legacy_ios_revival.imessage import (
     detect_connected_device,
     display_device_info,
     get_device_info,
+    test_imessage_fix,
 )
 
 
@@ -38,6 +39,12 @@ def main() -> int:
         action="store_true",
         help="Skip backing up iMessage settings during repair.",
     )
+    test_parser = subparsers.add_parser("test", help="Test the iMessage fix by emulating a broken state.")
+    test_parser.add_argument(
+        "--ssh-target",
+        required=True,
+        help="SSH target for a jailbroken device, e.g. root@192.168.1.10.",
+    )
 
     args = parser.parse_args()
 
@@ -65,6 +72,16 @@ def main() -> int:
             display_device_info(skip_if_unavailable=True)
             print()  # Add blank line for readability
             apply_imessage_patch(args.ssh_target, args.patch_package, skip_backup=args.no_backup)
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            return 1
+        return 0
+
+    if args.command == "test":
+        try:
+            display_device_info(skip_if_unavailable=True)
+            print()  # Add blank line for readability
+            test_imessage_fix(args.ssh_target)
         except RuntimeError as e:
             print(f"Error: {e}")
             return 1

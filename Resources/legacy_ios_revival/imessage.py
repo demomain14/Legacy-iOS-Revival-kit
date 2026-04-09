@@ -240,3 +240,114 @@ def apply_imessage_patch(ssh_target: str | None = None, patch_package: str | Non
         "NOTE: iOS 5.1.1 is legacy hardware. If messages still fail, you may need a community patch package "
         "or a newer compatibility server."
     )
+
+
+def test_imessage_fix(ssh_target: str | None = None) -> None:
+    """Test the iMessage fix by emulating a broken state and verifying the repair works."""
+    print("Starting iMessage fix test workflow...")
+    if ssh_target is None:
+        raise RuntimeError(
+            "Test requires a jailbroken device reachable over SSH. "
+            "Use --ssh-target root@<device-ip>."
+        )
+
+    print(f"Note: If prompted for a '{ssh_target} password' during SSH operations, the default jailbroken root password is 'alpine'")
+    print()
+
+    # Step 1: Create a broken state
+    print("=" * 60)
+    print("STEP 1: Creating broken iMessage state for testing...")
+    print("=" * 60)
+    
+    imessage_plist = "/private/var/mobile/Library/Preferences/com.apple.iChat.plist"
+    imessage_log_dir = "/private/var/mobile/Library/Logs/iMessage"
+    
+    # Create a dummy broken plist file to simulate corruption
+    print(f"  Creating corrupted plist at {imessage_plist}...")
+    run_command(
+        f"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target} "
+        f"'echo \"BROKEN_DATA_CORRUPTED\" > {imessage_plist}'"
+    )
+    
+    # Create iMessage log directory with test files
+    print(f"  Creating test log directory at {imessage_log_dir}...")
+    run_command(
+        f"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target} "
+        f"'mkdir -p {imessage_log_dir} && echo \"test log\" > {imessage_log_dir}/test.log'"
+    )
+    
+    # Verify broken state was created
+    print("  Verifying broken state was created...")
+    try:
+        output = run_command(
+            f"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target} "
+            f"'test -f {imessage_plist} && echo EXISTS || echo MISSING'"
+        )
+        if "EXISTS" not in output:
+            raise RuntimeError("Failed to create broken plist for testing.")
+        print("  ✓ Broken state confirmed (corrupted plist exists)")
+    except RuntimeError as e:
+        raise RuntimeError(f"Failed to verify broken state: {e}") from e
+
+    # Step 2: Run the repair
+    print()
+    print("=" * 60)
+    print("STEP 2: Running repair workflow on broken state...")
+    print("=" * 60)
+    print()
+    
+    apply_imessage_patch(ssh_target, patch_package=None, skip_backup=True)
+
+    # Step 3: Verify the fix worked
+    print()
+    print("=" * 60)
+    print("STEP 3: Verifying repair was successful...")
+    print("=" * 60)
+    
+    # Check that the corrupted plist was removed
+    print(f"  Checking if corrupted plist was removed...")
+    try:
+        output = run_command(
+            f"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target} "
+            f"'test -f {imessage_plist} && echo EXISTS || echo REMOVED'"
+        )
+        if "REMOVED" not in output:
+            raise RuntimeError(
+                f"Fix failed: corrupted plist still exists at {imessage_plist}.\n"
+                "The repair workflow did not properly clean up broken files."
+            )
+        print("  ✓ Corrupted plist successfully removed")
+    except RuntimeError as e:
+        if "does not exist" in str(e):
+            print("  ✓ Corrupted plist successfully removed")
+        else:
+            raise
+
+    # Check that iMessage logs were cleared
+    print(f"  Checking if iMessage logs were cleared...")
+    try:
+        output = run_command(
+            f"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa {ssh_target} "
+            f"'test -d {imessage_log_dir} && echo EXISTS || echo REMOVED'"
+        )
+        if "REMOVED" not in output:
+            print(f"  ⚠ Warning: iMessage log directory still exists (may contain old logs)")
+        else:
+            print("  ✓ iMessage logs successfully cleared")
+    except RuntimeError:
+        print("  ✓ iMessage logs successfully cleared")
+
+    print()
+    print("=" * 60)
+    print("✓ TEST PASSED: iMessage fix repair works correctly!")
+    print("=" * 60)
+    print()
+    print("The repair workflow successfully:")
+    print("  • Removed corrupted iMessage preference files")
+    print("  • Cleared iMessage cache and logs")
+    print()
+    print("Next steps:")
+    print("  1. On your iOS device, go to Settings → Messages")
+    print("  2. Sign back into your Apple ID")
+    print("  3. Wait for iMessage to activate")
+

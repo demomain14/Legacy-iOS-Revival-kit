@@ -39,13 +39,14 @@ python3 -m pip install .
 ```bash
 fix-imessage check
 fix-imessage backup --ssh-target root@192.168.1.10
-fix-imessage repair --ssh-target root@192.168.1.10 [--patch-package ./imessage-fix.deb]
+fix-imessage repair --ssh-target root@192.168.1.10 [--patch-package ./imessage-fix.deb] [--no-backup]
+fix-imessage test --ssh-target root@192.168.1.10
 ```
 
 ### What it does
-- checks device connectivity and iOS version
-- backs up legacy iMessage preference files
-- resets cached iMessage settings on a jailbroken device
-- optionally installs a local patch package if you have one
+- `check`: Verifies device connectivity and iOS version
+- `backup`: Backs up legacy iMessage preference files to a local directory
+- `repair`: Resets cached iMessage settings on a jailbroken device, with optional `--no-backup` flag to skip backup step
+- `test`: Tests the iMessage fix by emulating a broken state and verifying that the repair workflow successfully fixes it
 
 > Note: iOS 5.1.1 is a legacy device. This helper is intended to support repair workflows on jailbroken hardware; a complete iMessage restore may also require community patch packages or compatibility tweaks.
